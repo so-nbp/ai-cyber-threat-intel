@@ -66,6 +66,7 @@ AI スタッフ（`/ba`, `/sde`）とのチーム体制で開発を進行中。
 | BR-6 | 日次自動運用 | P0 | ✅ Done |
 | BR-7 | LLM ベース高精度分類 | P2 | 💡 Proposed |
 | BR-8 | STIX/TAXII 対応 | P3 | 💡 Proposed |
+| BR-9 | 産業セクター別脅威ダッシュボード | P1 | 📋 Defined |
 
 ### システム要件
 

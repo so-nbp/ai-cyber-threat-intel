@@ -138,6 +138,98 @@ AI_AGENTIC_KEYWORDS = [
 ]
 
 
+# ──────────────────────────────────────────────
+# Sector keyword sets for auto-classification
+# Based on CISA/NISC/NIS2 sector definitions (ADR-006)
+# ──────────────────────────────────────────────
+
+SECTOR_KEYWORDS: dict[AffectedSector, list[str]] = {
+    AffectedSector.FINANCIAL: [
+        "bank", "banking", "financial", "finance", "payment", "crypto",
+        "cryptocurrency", "fintech", "insurance", "swift", "trading",
+        "stock", "broker", "wallet", "exchange", "ledger", "credit",
+        "securities", "investment", "atm", "forex", "brokerage",
+    ],
+    AffectedSector.HEALTHCARE: [
+        "hospital", "medical", "health", "patient", "clinical", "pharma",
+        "pharmaceutical", "ehr", "hipaa", "fda", "drug", "vaccine",
+        "diagnostic", "radiology", "telehealth", "healthcare", "biomed",
+        "genomics", "dental", "nursing",
+    ],
+    AffectedSector.ENERGY: [
+        "power grid", "electricity", "energy", "utility", "oil", "gas",
+        "nuclear", "smart grid", "scada", "renewable", "solar", "wind turbine",
+        "substation", "pipeline", "refinery", "lng", "fuel", "grid",
+    ],
+    AffectedSector.GOVERNMENT: [
+        "government", "federal", "ministry", "municipal", "public sector",
+        "election", "parliament", "legislature", "department of",
+        "agency", "administration", "state department", "whitehouse",
+        "census", "passport", "tax authority", "regulation",
+    ],
+    AffectedSector.DEFENSE: [
+        "military", "defense", "army", "navy", "air force", "weapon",
+        "missile", "combat", "classified", "pentagon", "armed forces",
+        "nato", "satellite", "aerospace", "intelligence agency",
+        "surveillance", "warfare", "dod", "defence",
+    ],
+    AffectedSector.TECHNOLOGY: [
+        "cloud", "saas", "api", "developer", "software platform",
+        "github", "npm", "pypi", "docker", "kubernetes",
+        "data center", "hosting", "it service",
+        "managed service", "msp", "mssp", "devops", "ci/cd",
+    ],
+    AffectedSector.MANUFACTURING: [
+        "factory", "industrial", "manufacturing", "automotive", "supply chain",
+        "ics", "plc", "oem", "production", "assembly", "robotics",
+        "semiconductor", "electronics", "chemical plant", "steel",
+        "aerospace manufacturing",
+    ],
+    AffectedSector.TELECOMMUNICATIONS: [
+        "telecom", "telecommunications", "carrier", "isp", "5g", "4g",
+        "router", "switch", "internet exchange", "bgp", "fiber",
+        "mobile network", "wireless", "broadband", "voip", "sms",
+        "network provider",
+    ],
+    AffectedSector.TRANSPORTATION: [
+        "aviation", "airline", "airport", "railway", "railroad", "shipping",
+        "port", "harbor", "road", "fleet", "logistics", "freight",
+        "autonomous vehicle", "self-driving", "maritime", "cargo",
+        "transit", "traffic", "navigation",
+    ],
+    AffectedSector.EDUCATION: [
+        "university", "school", "college", "education", "academic",
+        "student", "research institution", "campus", "faculty",
+        "k-12", "edtech", "e-learning", "curriculum",
+    ],
+    AffectedSector.GENERAL: [
+        "retail", "ecommerce", "food", "agriculture", "grocery",
+        "restaurant", "supermarket", "consumer", "hospitality",
+        "hotel", "real estate", "water utility", "wastewater",
+    ],
+}
+
+
+def classify_affected_sector(text: str) -> AffectedSector:
+    """Classify the most likely target sector based on keyword matching."""
+    text_lower = text.lower()
+
+    scores = {
+        sector: sum(1 for kw in keywords if kw in text_lower)
+        for sector, keywords in SECTOR_KEYWORDS.items()
+    }
+
+    max_score = max(scores.values())
+    if max_score == 0:
+        return AffectedSector.UNKNOWN
+
+    for sector, score in scores.items():
+        if score == max_score:
+            return sector
+
+    return AffectedSector.UNKNOWN
+
+
 def classify_threat_category(text: str) -> ThreatCategory:
     """Classify threat category based on keyword matching."""
     text_lower = text.lower()

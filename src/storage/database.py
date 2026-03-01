@@ -236,6 +236,7 @@ class ThreatDatabase:
         source: Optional[str] = None,
         threat_category: Optional[str] = None,
         severity: Optional[str] = None,
+        sector: Optional[str] = None,
         ai_only: bool = False,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
@@ -257,6 +258,14 @@ class ThreatDatabase:
         if severity:
             conditions.append("severity = ?")
             params.append(severity)
+        if sector:
+            if sector == "unknown":
+                conditions.append(
+                    "(affected_sectors IS NULL OR affected_sectors = '[]' OR affected_sectors = 'null')"
+                )
+            else:
+                conditions.append('affected_sectors LIKE ?')
+                params.append(f'%"{sector}"%')
         if ai_only:
             conditions.append("is_ai_related = 1")
         if since:
@@ -299,6 +308,149 @@ class ThreatDatabase:
             (f"-{days}",),
         )
         return [dict(row) for row in cursor.fetchall()]
+
+    def get_sector_statistics(self) -> Dict[str, Any]:
+        """Return per-sector counts and severity breakdown using json_each."""
+        conn = self._get_connection()
+        # json_each expands the JSON array so each sector value becomes a row.
+        # Items with an empty array ('[]') are excluded from sector counts.
+        cursor = conn.execute(
+            """
+            SELECT
+                j.value AS sector,
+                COUNT(*) AS total,
+                SUM(CASE WHEN t.severity IN ('critical', 'high') THEN 1 ELSE 0 END) AS critical_high,
+                SUM(CASE WHEN t.severity = 'critical' THEN 1 ELSE 0 END) AS critical,
+                SUM(CASE WHEN t.severity = 'high' THEN 1 ELSE 0 END) AS high,
+                SUM(CASE WHEN t.severity = 'medium' THEN 1 ELSE 0 END) AS medium,
+                SUM(CASE WHEN t.severity = 'low' THEN 1 ELSE 0 END) AS low
+            FROM threat_items t, json_each(t.affected_sectors) j
+            GROUP BY j.value
+            ORDER BY total DESC
+            """
+        )
+        by_sector: Dict[str, Any] = {}
+        for row in cursor.fetchall():
+            by_sector[row["sector"]] = {
+                "total": row["total"],
+                "critical_high": row["critical_high"],
+                "critical": row["critical"],
+                "high": row["high"],
+                "medium": row["medium"],
+                "low": row["low"],
+            }
+
+        # Count items with no sector assignment as 'unknown'
+        unknown_cursor = conn.execute(
+            """
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN severity IN ('critical', 'high') THEN 1 ELSE 0 END) AS critical_high
+            FROM threat_items
+            WHERE affected_sectors IS NULL
+               OR affected_sectors = '[]'
+               OR affected_sectors = 'null'
+            """
+        )
+        unknown_row = unknown_cursor.fetchone()
+        if unknown_row and unknown_row["total"] > 0:
+            by_sector["unknown"] = {
+                "total": unknown_row["total"],
+                "critical_high": unknown_row["critical_high"] or 0,
+                "critical": 0,
+                "high": 0,
+                "medium": 0,
+                "low": 0,
+            }
+
+        return by_sector
+
+    def get_items_by_sector(
+        self,
+        sector: str,
+        limit: int = 20,
+        offset: int = 0,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Return (items, total_count) filtered by a specific sector."""
+        conn = self._get_connection()
+        if sector == "unknown":
+            where = (
+                "WHERE (affected_sectors IS NULL OR affected_sectors = '[]' "
+                "OR affected_sectors = 'null')"
+            )
+            params: List[Any] = []
+        else:
+            where = 'WHERE affected_sectors LIKE ?'
+            params = [f'%"{sector}"%']
+
+        count_cursor = conn.execute(
+            f"SELECT COUNT(*) as cnt FROM threat_items {where}", params
+        )
+        total = count_cursor.fetchone()["cnt"]
+
+        query = (
+            f"SELECT * FROM threat_items {where} "
+            "ORDER BY collected_at DESC, id DESC LIMIT ? OFFSET ?"
+        )
+        cursor = conn.execute(query, params + [limit, offset])
+        items = [dict(row) for row in cursor.fetchall()]
+        return items, total
+
+    def get_recent_by_sector(self, sector: str, days: int = 7) -> int:
+        """Return count of items for a sector collected in the last N days."""
+        conn = self._get_connection()
+        cutoff = f"-{days}"
+        if sector == "unknown":
+            cursor = conn.execute(
+                """
+                SELECT COUNT(*) as cnt FROM threat_items
+                WHERE (affected_sectors IS NULL OR affected_sectors = '[]' OR affected_sectors = 'null')
+                  AND collected_at >= date('now', ? || ' days')
+                """,
+                (cutoff,),
+            )
+        else:
+            cursor = conn.execute(
+                """
+                SELECT COUNT(*) as cnt FROM threat_items
+                WHERE affected_sectors LIKE ?
+                  AND collected_at >= date('now', ? || ' days')
+                """,
+                (f'%"{sector}"%', cutoff),
+            )
+        return cursor.fetchone()["cnt"]
+
+    def migrate_sector_classification(self) -> int:
+        """
+        Classify sectors for items that have no sector assigned yet.
+        Uses keyword matching on title + description.
+        Returns the number of records updated.
+        """
+        from ..models.enums import classify_affected_sector
+
+        conn = self._get_connection()
+        cursor = conn.execute(
+            """
+            SELECT id, title, description FROM threat_items
+            WHERE affected_sectors IS NULL
+               OR affected_sectors = '[]'
+               OR affected_sectors = 'null'
+            """
+        )
+        rows = cursor.fetchall()
+        updated = 0
+        for row in rows:
+            text = f"{row['title']} {row['description'] or ''}"
+            sector = classify_affected_sector(text)
+            if sector.value != "unknown":
+                conn.execute(
+                    "UPDATE threat_items SET affected_sectors = ? WHERE id = ?",
+                    (json.dumps([sector.value]), row["id"]),
+                )
+                updated += 1
+        conn.commit()
+        logger.info("sector_migration_done", updated=updated, skipped=len(rows) - updated)
+        return updated
 
     def get_statistics(self) -> Dict[str, Any]:
         conn = self._get_connection()

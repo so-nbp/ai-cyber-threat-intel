@@ -1,8 +1,10 @@
 """Tests for threat models and classification."""
 
 from src.models.enums import (
+    AffectedSector,
     ThreatCategory,
     Severity,
+    classify_affected_sector,
     classify_threat_category,
     severity_from_cvss,
 )
@@ -102,6 +104,52 @@ class TestThreatIntelItem:
             threat_category=ThreatCategory.TRADITIONAL,
         )
         assert item.is_ai_related is False
+
+class TestClassifyAffectedSector:
+    def test_financial(self):
+        text = "Critical vulnerability in banking payment system allows unauthorized SWIFT transactions"
+        assert classify_affected_sector(text) == AffectedSector.FINANCIAL
+
+    def test_healthcare(self):
+        text = "Ransomware targets hospital patient EHR system with clinical data exfiltration"
+        assert classify_affected_sector(text) == AffectedSector.HEALTHCARE
+
+    def test_energy(self):
+        text = "SCADA attack on power grid electricity substation control system"
+        assert classify_affected_sector(text) == AffectedSector.ENERGY
+
+    def test_government(self):
+        text = "Federal government ministry election system compromised by nation-state actor"
+        assert classify_affected_sector(text) == AffectedSector.GOVERNMENT
+
+    def test_defense(self):
+        text = "Military drone weapon system vulnerability found in combat navigation software"
+        assert classify_affected_sector(text) == AffectedSector.DEFENSE
+
+    def test_technology(self):
+        text = "Supply chain attack on npm package targeting cloud SaaS developer platform"
+        assert classify_affected_sector(text) == AffectedSector.TECHNOLOGY
+
+    def test_manufacturing(self):
+        text = "ICS PLC vulnerability in automotive manufacturing factory control system"
+        assert classify_affected_sector(text) == AffectedSector.MANUFACTURING
+
+    def test_telecommunications(self):
+        text = "5G carrier network router BGP hijack targeting telecom ISP infrastructure"
+        assert classify_affected_sector(text) == AffectedSector.TELECOMMUNICATIONS
+
+    def test_transportation(self):
+        text = "Ransomware hits airport aviation system disrupting airline flight operations"
+        assert classify_affected_sector(text) == AffectedSector.TRANSPORTATION
+
+    def test_education(self):
+        text = "University student data breach exposes academic research campus credentials"
+        assert classify_affected_sector(text) == AffectedSector.EDUCATION
+
+    def test_unknown(self):
+        text = "Generic buffer overflow vulnerability in open source library"
+        assert classify_affected_sector(text) == AffectedSector.UNKNOWN
+
 
     def test_is_ai_related_new_categories(self):
         for category in (

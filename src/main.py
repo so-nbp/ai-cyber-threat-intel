@@ -197,6 +197,28 @@ def init_db(ctx: click.Context) -> None:
     console.print("[green]Database initialized successfully.[/green]")
 
 
+@cli.command(name="migrate-sectors")
+@click.pass_context
+def migrate_sectors(ctx: click.Context) -> None:
+    """Classify sectors for existing records that have no sector assigned.
+
+    Runs keyword-based sector classification on all threat items where
+    affected_sectors is empty, and updates the database in place.
+    """
+    cfg = ctx.obj["config"]
+    db = ThreatDatabase(cfg.storage.db_path)
+    db.initialize()
+
+    console.print("[bold]Running sector migration...[/bold]")
+    updated = db.migrate_sector_classification()
+    db.close()
+
+    console.print(Panel(
+        f"[bold]Updated:[/bold] {updated} records with sector classification",
+        title="[green]Sector Migration Complete[/green]",
+    ))
+
+
 @cli.command()
 @click.option("--severity", "-sev", default=None,
               type=click.Choice(["critical", "high", "medium", "low", "info", "unknown"]),

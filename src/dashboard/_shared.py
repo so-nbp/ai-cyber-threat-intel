@@ -51,6 +51,37 @@ CATEGORY_LABELS: Dict[str, str] = {
     "unknown": "Unknown",
 }
 
+# ── Sector labels & colors ──────────────────────────────────────────────────
+SECTOR_LABELS: Dict[str, str] = {
+    "energy": "⚡ エネルギー",
+    "financial": "🏦 金融",
+    "healthcare": "🏥 医療・ヘルスケア",
+    "telecommunications": "📡 通信・情報通信",
+    "transportation": "✈️ 交通・物流",
+    "government": "🏛️ 政府・行政",
+    "defense": "🛡️ 防衛・宇宙",
+    "technology": "💻 情報技術・IT",
+    "manufacturing": "🏭 製造業",
+    "education": "🎓 教育・研究",
+    "general": "🛒 小売・食品・その他",
+    "unknown": "❓ 分類不明",
+}
+
+SECTOR_COLORS: Dict[str, str] = {
+    "energy": "#ff6f00",
+    "financial": "#1565c0",
+    "healthcare": "#2e7d32",
+    "telecommunications": "#6a1b9a",
+    "transportation": "#00695c",
+    "government": "#283593",
+    "defense": "#4e342e",
+    "technology": "#0277bd",
+    "manufacturing": "#558b2f",
+    "education": "#ad1457",
+    "general": "#795548",
+    "unknown": "#9e9e9e",
+}
+
 CATEGORY_COLORS: Dict[str, str] = {
     "ai-as-target": "#e53935",
     "ai-as-weapon": "#8e24aa",

@@ -16,6 +16,7 @@ if str(_ROOT) not in sys.path:
 
 from src.dashboard._shared import (  # noqa: E402
     CATEGORY_LABELS,
+    SECTOR_LABELS,
     SEVERITY_BADGE,
     SEVERITY_COLORS,
     format_date,
@@ -50,6 +51,15 @@ with st.sidebar:
     source_opts = ["（すべて）", "nvd", "cisa_kev", "github_advisory", "arxiv", "rss_feeds", "otx"]
     selected_source = st.selectbox("ソース", source_opts)
 
+    sector_opts = ["（すべて）"] + list(SECTOR_LABELS.keys())
+    sector_display_opts = ["（すべて）"] + list(SECTOR_LABELS.values())
+    selected_sector_display = st.selectbox("産業セクター", sector_display_opts)
+    selected_sector = (
+        None
+        if selected_sector_display == "（すべて）"
+        else sector_opts[sector_display_opts.index(selected_sector_display)]
+    )
+
     ai_only = st.checkbox("AI関連のみ")
 
     st.markdown("**期間（収集日）**")
@@ -75,7 +85,7 @@ if "list_page" not in st.session_state:
     st.session_state["list_page"] = 0
 
 # フィルタ変更時はページを先頭に戻す
-filter_key = (search_text, selected_category, selected_severity, selected_source, ai_only, date_preset)
+filter_key = (search_text, selected_category, selected_severity, selected_source, selected_sector, ai_only, date_preset)
 if st.session_state.get("_prev_filter") != filter_key:
     st.session_state["list_page"] = 0
     st.session_state["_prev_filter"] = filter_key
@@ -88,6 +98,7 @@ items, total = db.search_items(
     source=None if selected_source == "（すべて）" else selected_source,
     threat_category=None if selected_category == "（すべて）" else selected_category,
     severity=None if selected_severity == "（すべて）" else selected_severity,
+    sector=selected_sector,
     ai_only=ai_only,
     since=since_dt,
     search=search_text or None,

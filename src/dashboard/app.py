@@ -17,6 +17,8 @@ import streamlit as st
 from _shared import (
     CATEGORY_COLORS,
     CATEGORY_LABELS,
+    SECTOR_COLORS,
+    SECTOR_LABELS,
     SEVERITY_COLORS,
     format_date,
     get_db,
@@ -37,6 +39,7 @@ db = get_db()
 
 # ── Fetch data ───────────────────────────────────────────────────────────────
 stats = db.get_statistics()
+sector_stats = db.get_sector_statistics()
 daily_trend = db.get_daily_trend(days=30)
 
 total_items: int = stats.get("total_items", 0)
@@ -162,6 +165,88 @@ with right2:
         st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("データがありません")
+
+st.divider()
+
+# ── Sector Summary (BR-9-1) ───────────────────────────────────────────────────
+st.subheader("産業セクター別 脅威状況")
+
+# 分類済みデータが少ない場合は案内を表示
+classified_total = sum(v["total"] for k, v in sector_stats.items() if k != "unknown")
+unclassified = sector_stats.get("unknown", {}).get("total", 0)
+if classified_total == 0 and unclassified > 0:
+    st.info(
+        f"セクター分類データがありません（未分類: {unclassified:,} 件）。"
+        " CLIから `python -m src.main migrate-sectors` を実行するとセクターを自動付与できます。",
+        icon="ℹ️",
+    )
+elif sector_stats:
+    # unknown を除いてグラフ化（UNKNOWNは参考表示）
+    known_sectors = {k: v for k, v in sector_stats.items() if k != "unknown"}
+
+    sleft, sright = st.columns(2)
+
+    with sleft:
+        st.markdown("**セクター別 脅威件数**")
+        if known_sectors:
+            s_labels = [SECTOR_LABELS.get(k, k) for k in known_sectors]
+            s_totals = [v["total"] for v in known_sectors.values()]
+            s_criti = [v["critical_high"] for v in known_sectors.values()]
+            s_colors = [SECTOR_COLORS.get(k, "#9e9e9e") for k in known_sectors]
+
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                name="Critical / High",
+                y=s_labels,
+                x=s_criti,
+                orientation="h",
+                marker_color="#e53935",
+                opacity=0.9,
+                hovertemplate="%{y}: %{x} 件 (Critical/High)<extra></extra>",
+            ))
+            fig.add_trace(go.Bar(
+                name="その他",
+                y=s_labels,
+                x=[t - c for t, c in zip(s_totals, s_criti)],
+                orientation="h",
+                marker_color=[SECTOR_COLORS.get(k, "#9e9e9e") for k in known_sectors],
+                opacity=0.5,
+                hovertemplate="%{y}: %{x} 件 (Medium以下)<extra></extra>",
+            ))
+            fig.update_layout(
+                barmode="stack",
+                xaxis_title="件数",
+                yaxis_title=None,
+                margin=dict(t=10, b=10, l=10, r=10),
+                height=360,
+                legend=dict(orientation="h", yanchor="bottom", y=-0.25),
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("セクター分類データがありません")
+
+    with sright:
+        st.markdown("**リスクが高いセクター Top 8**")
+        if known_sectors:
+            # Critical+High 件数でソート
+            sorted_sectors = sorted(
+                known_sectors.items(),
+                key=lambda x: x[1]["critical_high"],
+                reverse=True,
+            )[:8]
+            rank_data = []
+            for rank, (sector, vals) in enumerate(sorted_sectors, start=1):
+                rank_data.append({
+                    "順位": rank,
+                    "セクター": SECTOR_LABELS.get(sector, sector),
+                    "Critical/High": vals["critical_high"],
+                    "総件数": vals["total"],
+                })
+            st.dataframe(rank_data, use_container_width=True, hide_index=True)
+            if unclassified > 0:
+                st.caption(f"※ 未分類 {unclassified:,} 件はランキング対象外")
+        else:
+            st.info("データがありません")
 
 st.divider()
 
