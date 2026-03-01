@@ -426,7 +426,7 @@ class ThreatDatabase:
         Uses keyword matching on title + description.
         Returns the number of records updated.
         """
-        from ..models.enums import classify_affected_sector
+        from ..models.enums import classify_affected_sectors
 
         conn = self._get_connection()
         cursor = conn.execute(
@@ -441,11 +441,11 @@ class ThreatDatabase:
         updated = 0
         for row in rows:
             text = f"{row['title']} {row['description'] or ''}"
-            sector = classify_affected_sector(text)
-            if sector.value != "unknown":
+            sectors = classify_affected_sectors(text)
+            if sectors:
                 conn.execute(
                     "UPDATE threat_items SET affected_sectors = ? WHERE id = ?",
-                    (json.dumps([sector.value]), row["id"]),
+                    (json.dumps([s.value for s in sectors]), row["id"]),
                 )
                 updated += 1
         conn.commit()

@@ -18,6 +18,7 @@ from .enums import (
     Severity,
     SourceType,
     ThreatCategory,
+    classify_affected_sectors,
 )
 
 
@@ -99,6 +100,10 @@ class ThreatIntelItem(BaseModel):
             self.threat_category != ThreatCategory.TRADITIONAL
             and self.threat_category != ThreatCategory.UNKNOWN
         )
+        # Auto-assign sectors when the caller has not set them explicitly
+        if not self.affected_sectors:
+            text = f"{self.title} {self.description}"
+            self.affected_sectors = classify_affected_sectors(text)
 
 
 class CollectionResult(BaseModel):

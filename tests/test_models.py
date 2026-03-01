@@ -5,6 +5,7 @@ from src.models.enums import (
     ThreatCategory,
     Severity,
     classify_affected_sector,
+    classify_affected_sectors,
     classify_threat_category,
     severity_from_cvss,
 )
@@ -163,3 +164,72 @@ class TestClassifyAffectedSector:
                 threat_category=category,
             )
             assert item.is_ai_related is True, f"{category} should be ai_related"
+
+
+class TestClassifyAffectedSectors:
+    """Tests for the multi-sector classify_affected_sectors() function."""
+
+    def test_single_sector_match(self):
+        text = "Ransomware targets hospital patient EHR system"
+        result = classify_affected_sectors(text)
+        assert AffectedSector.HEALTHCARE in result
+
+    def test_multi_sector_match(self):
+        # Contains both financial and government keywords
+        text = "Federal government bank payment system breach"
+        result = classify_affected_sectors(text)
+        assert AffectedSector.FINANCIAL in result
+        assert AffectedSector.GOVERNMENT in result
+
+    def test_no_match_returns_empty_list(self):
+        text = "Generic buffer overflow in open source library"
+        assert classify_affected_sectors(text) == []
+
+    def test_returns_list_type(self):
+        text = "Cloud SaaS developer API security issue"
+        result = classify_affected_sectors(text)
+        assert isinstance(result, list)
+
+
+class TestThreatIntelItemSectorAutoAssign:
+    """Tests for automatic sector assignment in ThreatIntelItem.__init__."""
+
+    def test_sector_auto_assigned_from_title_description(self):
+        item = ThreatIntelItem(
+            source="test", source_type=SourceType.NEWS,
+            source_id="auto-sector-1",
+            title="Ransomware hits hospital EHR system",
+            description="Patient clinical data exfiltrated.",
+        )
+        assert AffectedSector.HEALTHCARE in item.affected_sectors
+
+    def test_no_sector_keyword_leaves_empty_list(self):
+        item = ThreatIntelItem(
+            source="test", source_type=SourceType.NEWS,
+            source_id="auto-sector-2",
+            title="Buffer overflow in generic library",
+            description="No sector keywords here.",
+        )
+        assert item.affected_sectors == []
+
+    def test_explicit_sectors_not_overwritten(self):
+        explicit = [AffectedSector.DEFENSE]
+        item = ThreatIntelItem(
+            source="test", source_type=SourceType.NEWS,
+            source_id="auto-sector-3",
+            title="Military drone weapon system issue",
+            description="Affects armed forces navigation.",
+            affected_sectors=explicit,
+        )
+        # Should keep the explicitly provided value, not re-classify
+        assert item.affected_sectors == explicit
+
+    def test_multi_sector_auto_assigned(self):
+        item = ThreatIntelItem(
+            source="test", source_type=SourceType.NEWS,
+            source_id="auto-sector-4",
+            title="Federal government bank payment breach",
+            description="Attack spans financial and public sector systems.",
+        )
+        assert AffectedSector.FINANCIAL in item.affected_sectors
+        assert AffectedSector.GOVERNMENT in item.affected_sectors

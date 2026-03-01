@@ -210,8 +210,26 @@ SECTOR_KEYWORDS: dict[AffectedSector, list[str]] = {
 }
 
 
+def classify_affected_sectors(text: str) -> list[AffectedSector]:
+    """Classify all matching target sectors based on keyword matching.
+
+    Returns a list of all sectors that have at least one keyword match.
+    Returns an empty list when no sector keyword is found.
+    """
+    text_lower = text.lower()
+    return [
+        sector
+        for sector, keywords in SECTOR_KEYWORDS.items()
+        if any(kw in text_lower for kw in keywords)
+    ]
+
+
 def classify_affected_sector(text: str) -> AffectedSector:
-    """Classify the most likely target sector based on keyword matching."""
+    """Classify the most likely (highest-score) target sector.
+
+    Kept for backward compatibility. Prefer classify_affected_sectors()
+    for new code where multiple sectors can apply.
+    """
     text_lower = text.lower()
 
     scores = {
