@@ -384,6 +384,23 @@ def show(ctx: click.Context, severity: Optional[str], category: Optional[str],
 
 
 @cli.command()
+@click.option("--port", "-p", default=8501, help="Port to run the dashboard on (default: 8501)")
+def dashboard(port: int) -> None:
+    """Launch the Web dashboard (Streamlit)."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    app_path = Path(__file__).parent / "dashboard" / "app.py"
+    console.print(f"[bold green]Starting dashboard on http://localhost:{port}[/bold green]")
+    console.print("[dim]Press Ctrl+C to stop[/dim]")
+    subprocess.run(
+        [sys.executable, "-m", "streamlit", "run", str(app_path), "--server.port", str(port)],
+        check=False,
+    )
+
+
+@cli.command()
 def sources() -> None:
     """List available collection sources."""
     table = Table(title="Available Collectors")

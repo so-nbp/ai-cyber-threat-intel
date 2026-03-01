@@ -209,6 +209,96 @@ class ThreatDatabase:
         cursor = conn.execute(query, params)
         return [dict(row) for row in cursor.fetchall()]
 
+    def get_item_by_id(self, item_id: int) -> Optional[Dict[str, Any]]:
+        """Fetch a single threat item by primary key."""
+        conn = self._get_connection()
+        cursor = conn.execute("SELECT * FROM threat_items WHERE id = ?", (item_id,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
+
+    def get_adjacent_ids(self, item_id: int) -> Tuple[Optional[int], Optional[int]]:
+        """Return (prev_id, next_id) relative to item_id ordered by collected_at DESC."""
+        conn = self._get_connection()
+        cursor = conn.execute(
+            "SELECT id FROM threat_items ORDER BY collected_at DESC, id DESC"
+        )
+        ids = [r["id"] for r in cursor.fetchall()]
+        if item_id not in ids:
+            return None, None
+        idx = ids.index(item_id)
+        prev_id = ids[idx - 1] if idx > 0 else None
+        next_id = ids[idx + 1] if idx < len(ids) - 1 else None
+        return prev_id, next_id
+
+    def search_items(
+        self,
+        source: Optional[str] = None,
+        threat_category: Optional[str] = None,
+        severity: Optional[str] = None,
+        ai_only: bool = False,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        search: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Return (items, total_count) with full-text search and date range support."""
+        conn = self._get_connection()
+        conditions = []
+        params: List[Any] = []
+
+        if source:
+            conditions.append("source = ?")
+            params.append(source)
+        if threat_category:
+            conditions.append("threat_category = ?")
+            params.append(threat_category)
+        if severity:
+            conditions.append("severity = ?")
+            params.append(severity)
+        if ai_only:
+            conditions.append("is_ai_related = 1")
+        if since:
+            conditions.append("collected_at >= ?")
+            params.append(since.isoformat())
+        if until:
+            conditions.append("collected_at <= ?")
+            params.append(until.isoformat())
+        if search:
+            conditions.append("(title LIKE ? OR description LIKE ?)")
+            pattern = f"%{search}%"
+            params.extend([pattern, pattern])
+
+        where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        count_cursor = conn.execute(
+            f"SELECT COUNT(*) as cnt FROM threat_items {where}", params
+        )
+        total = count_cursor.fetchone()["cnt"]
+
+        query = (
+            f"SELECT * FROM threat_items {where} "
+            "ORDER BY collected_at DESC, id DESC LIMIT ? OFFSET ?"
+        )
+        cursor = conn.execute(query, params + [limit, offset])
+        items = [dict(row) for row in cursor.fetchall()]
+        return items, total
+
+    def get_daily_trend(self, days: int = 30) -> List[Dict[str, Any]]:
+        """Return daily collected item counts for the last N days."""
+        conn = self._get_connection()
+        cursor = conn.execute(
+            """
+            SELECT date(collected_at) as day, COUNT(*) as count
+            FROM threat_items
+            WHERE collected_at >= date('now', ? || ' days')
+            GROUP BY day
+            ORDER BY day
+            """,
+            (f"-{days}",),
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
     def get_statistics(self) -> Dict[str, Any]:
         conn = self._get_connection()
         stats: Dict[str, Any] = {}
