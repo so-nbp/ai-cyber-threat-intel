@@ -140,8 +140,7 @@ else:
 
         item_id = item.get("id")
         if item_id and row[6].button("→", key=f"detail_{item_id}_{i}"):
-            st.query_params["page"] = "detail"
-            st.query_params["id"] = str(item_id)
+            st.session_state["detail_item_id"] = item_id
             st.switch_page("pages/2_脅威詳細.py")
 
     st.divider()

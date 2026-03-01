@@ -32,9 +32,14 @@ st.set_page_config(
 
 db = get_db()
 
-# ── Read ?id from query params ───────────────────────────────────────────────
-params = st.query_params
-raw_id = params.get("id")
+# ── Read item ID (query param または session_state から取得) ──────────────────
+raw_id = st.query_params.get("id")
+
+# st.switch_page() はクエリパラメータを引き継がないため session_state をフォールバックに使う
+if not raw_id:
+    session_id = st.session_state.pop("detail_item_id", None)
+    if session_id is not None:
+        raw_id = str(session_id)
 
 if not raw_id:
     st.warning("URLに ?id=<ID> を指定してください。")
