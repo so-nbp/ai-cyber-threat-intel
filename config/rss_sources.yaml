@@ -1,0 +1,61 @@
+# Security Vendor Blog RSS Feeds
+
+vendor_blogs:
+  - name: "Google Threat Intelligence"
+    url: "https://cloud.google.com/blog/topics/threat-intelligence/rss/"
+    category: "threat-intel"
+
+  - name: "Microsoft Security Blog"
+    url: "https://www.microsoft.com/en-us/security/blog/feed/"
+    category: "threat-intel"
+
+  - name: "Palo Alto Unit 42"
+    url: "https://unit42.paloaltonetworks.com/feed/"
+    category: "threat-intel"
+
+  - name: "CrowdStrike Blog"
+    url: "https://www.crowdstrike.com/blog/feed/"
+    category: "threat-intel"
+
+  - name: "SentinelOne Labs"
+    url: "https://www.sentinelone.com/labs/feed/"
+    category: "threat-intel"
+
+  - name: "Cisco Talos"
+    url: "https://blog.talosintelligence.com/feeds/posts/default"
+    category: "threat-intel"
+
+  - name: "Krebs on Security"
+    url: "https://krebsonsecurity.com/feed/"
+    category: "news"
+
+  - name: "The Hacker News"
+    url: "https://feeds.feedburner.com/TheHackersNews"
+    category: "news"
+
+  - name: "BleepingComputer"
+    url: "https://www.bleepingcomputer.com/feed/"
+    category: "news"
+
+government_advisories:
+  - name: "CISA Alerts"
+    url: "https://www.cisa.gov/cybersecurity-advisories/all.xml"
+    category: "government"
+
+  - name: "JPCERT/CC"
+    url: "https://www.jpcert.or.jp/english/rss/jpcert-en.rdf"
+    category: "government"
+
+ai_specific:
+  - name: "NVIDIA Security Bulletins"
+    url: "https://www.nvidia.com/en-us/security/feed.xml"
+    category: "advisory"
+
+research:
+  - name: "Trail of Bits Blog"
+    url: "https://blog.trailofbits.com/feed/"
+    category: "research"
+
+  - name: "Google Project Zero"
+    url: "https://googleprojectzero.blogspot.com/feeds/posts/default"
+    category: "research"

@@ -1,0 +1,31 @@
+# AI Cyber Threat Intelligence Collector - Configuration
+# Copy to settings.yaml and fill in API keys (or set env vars).
+
+log_level: "INFO"
+log_file: "logs/acti.log"
+user_agent: "AI-CyberThreatIntel/0.1.0 (Research)"
+
+nvd:
+  api_key: null   # or ACTI_NVD_API_KEY env var
+  results_per_page: 100
+  rate_limit_delay: 6.0
+
+github:
+  token: null     # or ACTI_GITHUB_TOKEN env var
+
+otx:
+  api_key: null   # or ACTI_OTX_API_KEY env var
+  pulse_days: 7
+
+arxiv:
+  max_results_per_query: 50
+
+storage:
+  db_path: "data/db/threat_intel.db"
+  raw_data_path: "data/raw"
+  processed_data_path: "data/processed"
+
+scheduler:
+  daily_collection_hour: 6
+  daily_collection_minute: 0
+  enable_scheduler: true
