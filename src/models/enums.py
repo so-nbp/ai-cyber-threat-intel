@@ -11,12 +11,15 @@ from typing import Optional
 
 
 class ThreatCategory(str, Enum):
-    """Top-level AI threat classification."""
+    """Top-level AI threat classification (7-axis taxonomy)."""
 
     AI_AS_TARGET = "ai-as-target"
     AI_AS_WEAPON = "ai-as-weapon"
     AI_ENABLED = "ai-enabled"
     AI_ADJACENT = "ai-adjacent"
+    AI_PHYSICAL = "ai-physical"
+    AI_SUPPLY_CHAIN = "ai-supply-chain"
+    AI_AGENTIC = "ai-agentic"
     TRADITIONAL = "traditional"
     UNKNOWN = "unknown"
 
@@ -105,6 +108,35 @@ AI_ADJACENT_KEYWORDS = [
     "embedding", "rag pipeline", "ai governance",
 ]
 
+AI_PHYSICAL_KEYWORDS = [
+    "autonomous vehicle", "self-driving", "autonomous driving",
+    "industrial robot", "robotic system", "surgical robot", "medical robot",
+    "drone attack", "uav", "unmanned aerial",
+    "cyber-physical", "autonomous weapon", "lethal autonomous",
+    "ai-controlled physical", "physical ai attack", "embedded ai attack",
+    "smart grid attack", "ot security ai",
+]
+
+AI_SUPPLY_CHAIN_KEYWORDS = [
+    "poisoned model", "model supply chain", "malicious weights",
+    "compromised model", "model repository attack",
+    "dataset poisoning", "training dataset manipulation",
+    "model hub attack", "pre-trained model attack",
+    "weight poisoning", "fine-tuning attack",
+    "lora poisoning", "adapter attack", "artifact poisoning",
+    "dependency confusion ai", "malicious package ml",
+]
+
+AI_AGENTIC_KEYWORDS = [
+    "ai agent attack", "llm agent", "agentic ai",
+    "autonomous agent attack", "agentic attack",
+    "tool injection", "indirect prompt injection",
+    "agent hijacking", "agent manipulation", "multi-agent attack",
+    "function calling attack", "tool use attack",
+    "computer use attack", "code interpreter attack",
+    "agent orchestration attack", "mcp attack", "mcp vulnerability",
+]
+
 
 def classify_threat_category(text: str) -> ThreatCategory:
     """Classify threat category based on keyword matching."""
@@ -115,6 +147,9 @@ def classify_threat_category(text: str) -> ThreatCategory:
         ThreatCategory.AI_AS_WEAPON: sum(1 for kw in AI_WEAPON_KEYWORDS if kw in text_lower),
         ThreatCategory.AI_ENABLED: sum(1 for kw in AI_ENABLED_KEYWORDS if kw in text_lower),
         ThreatCategory.AI_ADJACENT: sum(1 for kw in AI_ADJACENT_KEYWORDS if kw in text_lower),
+        ThreatCategory.AI_PHYSICAL: sum(1 for kw in AI_PHYSICAL_KEYWORDS if kw in text_lower),
+        ThreatCategory.AI_SUPPLY_CHAIN: sum(1 for kw in AI_SUPPLY_CHAIN_KEYWORDS if kw in text_lower),
+        ThreatCategory.AI_AGENTIC: sum(1 for kw in AI_AGENTIC_KEYWORDS if kw in text_lower),
     }
 
     max_score = max(scores.values())

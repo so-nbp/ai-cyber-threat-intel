@@ -27,6 +27,18 @@ class TestClassifyThreatCategory:
         text = "NVIDIA driver vulnerability in GPU cluster computing environment"
         assert classify_threat_category(text) == ThreatCategory.AI_ADJACENT
 
+    def test_ai_physical(self):
+        text = "Researchers demonstrate cyber-physical attack hijacking autonomous vehicle via self-driving system"
+        assert classify_threat_category(text) == ThreatCategory.AI_PHYSICAL
+
+    def test_ai_supply_chain(self):
+        text = "Poisoned model distributed via model hub attack found with malicious weights through dataset poisoning campaign"
+        assert classify_threat_category(text) == ThreatCategory.AI_SUPPLY_CHAIN
+
+    def test_ai_agentic(self):
+        text = "Indirect prompt injection enables agent hijacking through tool injection in LLM agent deployment"
+        assert classify_threat_category(text) == ThreatCategory.AI_AGENTIC
+
     def test_unknown(self):
         text = "Generic SQL injection in web application"
         assert classify_threat_category(text) == ThreatCategory.UNKNOWN
@@ -90,3 +102,16 @@ class TestThreatIntelItem:
             threat_category=ThreatCategory.TRADITIONAL,
         )
         assert item.is_ai_related is False
+
+    def test_is_ai_related_new_categories(self):
+        for category in (
+            ThreatCategory.AI_PHYSICAL,
+            ThreatCategory.AI_SUPPLY_CHAIN,
+            ThreatCategory.AI_AGENTIC,
+        ):
+            item = ThreatIntelItem(
+                source="test", source_type=SourceType.NEWS,
+                source_id=f"test-{category.value}", title="T", description="D",
+                threat_category=category,
+            )
+            assert item.is_ai_related is True, f"{category} should be ai_related"
