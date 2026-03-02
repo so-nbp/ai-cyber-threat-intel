@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(ba)",
+      "Skill(sde)",
+      "Bash(source .venv/bin/activate && python -c \"\nfrom src.storage.database import ThreatDatabase\nfrom src.utils.config import load_config\ncfg = load_config\\(None\\)\ndb = ThreatDatabase\\(cfg.storage.db_path\\)\ndb.initialize\\(\\)\n\n# 新メソッドのテスト\nitems, total = db.search_items\\(limit=5\\)\nprint\\(f'search_items: total={total}, returned={len\\(items\\)}'\\)\n\ntrend = db.get_daily_trend\\(days=30\\)\nprint\\(f'get_daily_trend: {len\\(trend\\)} days of data'\\)\n\nif items:\n    first_id = items[0]['id']\n    single = db.get_item_by_id\\(first_id\\)\n    print\\(f'get_item_by_id\\({first_id}\\): title={single[\\\\\"title\\\\\"][:40]}...'\\)\n    prev_id, next_id = db.get_adjacent_ids\\(first_id\\)\n    print\\(f'get_adjacent_ids: prev={prev_id}, next={next_id}'\\)\n\ndb.close\\(\\)\nprint\\('All DB methods OK'\\)\n\")",
+      "Bash(source .venv/bin/activate && python -m pytest tests/ -v 2>&1)",
+      "WebSearch"
+    ]
+  }
+}
